@@ -17,14 +17,19 @@ class ExcelController extends Controller
         $file = $request->file;
         $model = $request->model;
 
-        $rows = (new ExcelImport)->toCollection($file);
+        $rows = (new ExcelImport)->toCollection($file)->first();
 
-        foreach ($rows->first() as $row){
-            $row['created_at'] = Carbon::now();
-            $row['updated_at'] = Carbon::now();
-        }
+        $rows->map(function($row) {
+            $row['id'] = (int)$row['id'];
+            unset($row['']);
+            $row['created_at'] = Carbon::now()->format('Y-m-d H:m:s');
+            $row['updated_at'] = Carbon::now()->format('Y-m-d H:m:s');
+        });
+        $rows = $rows->where('id', '!=', 0);
 
-        $object = (new $model())->insert($rows->first()->toArray());
+        $modelInstance = new $model();
+        $modelInstance->truncate();
+        $object = $modelInstance->insert($rows->toArray());
 
         return response()->json($object);
     }
